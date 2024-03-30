@@ -1,0 +1,41 @@
+import dpkt
+import socket
+import sys
+
+def analyze_pcap(file_path):
+    with open(file_path, 'rb') as f:
+        pcap = dpkt.pcap.Reader(f)
+        
+        for timestamp, buf in pcap:
+            try:
+                eth = dpkt.ethernet.Ethernet(buf)
+                # 确保是IP数据包
+                if not isinstance(eth.data, dpkt.ip.IP):
+                    continue
+                ip = eth.data
+                # 确保是TCP段
+                if isinstance(ip.data, dpkt.tcp.TCP):
+                    tcp = ip.data
+
+                    src_ip = socket.inet_ntoa(ip.src)
+                    dst_ip = socket.inet_ntoa(ip.dst)
+                    src_port = tcp.sport
+                    dst_port = tcp.dport
+                    
+                    print(f"Source IP: {src_ip}; Source port number is: {src_port}; Destination IP is: {dst_ip}; Destination port is{dst_port}\n")
+
+            except dpkt.UnpackError:
+                continue
+
+def main():
+    if len(sys.argv) != 2:
+        print("Usage: python analysis_pcap_tcp.py <path_to_pcap_file>")
+        sys.exit(1)
+
+    file_path = sys.argv[1]
+    analyze_pcap(file_path)
+
+
+if __name__ == '__main__':
+    main()
+    
